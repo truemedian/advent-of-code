@@ -11,7 +11,77 @@ const gpa = util.gpa;
 const data = @embedFile("data/day02.txt");
 
 pub fn main() !void {
-    
+    var score1: i64 = 0;
+    var score2: i64 = 0;
+
+    var lines = split(u8, data, "\n");
+    while (lines.next()) |line| {
+        if (line.len == 0) continue;
+        var part = split(u8, line, " ");
+
+        const a = part.next().?[0];
+        const b = part.next().?[0];
+
+        score1 += b - 'W';
+
+        if (a == 'A') {
+            if (b == 'X') {
+                score1 += 3;
+
+                score2 += 0;
+                score2 += 3;
+            } else if (b == 'Y') {
+                score1 += 6;
+
+                score2 += 3;
+                score2 += 1;
+            } else if (b == 'Z') {
+                score1 += 0;
+
+                score2 += 6;
+                score2 += 2;
+            }
+        } else if (a == 'B') {
+            if (b == 'X') {
+                score1 += 0;
+
+                score2 += 0;
+                score2 += 1;
+            } else if (b == 'Y') {
+                score1 += 3;
+
+                score2 += 3;
+                score2 += 2;
+            } else if (b == 'Z') {
+                score1 += 6;
+
+                score2 += 6;
+                score2 += 3;
+            }
+        } else if (a == 'C') {
+            if (b == 'X') {
+                score1 += 6;
+
+                score2 += 0;
+                score2 += 2;
+            } else if (b == 'Y') {
+                score1 += 0;
+
+                score2 += 3;
+                score2 += 3;
+            } else if (b == 'Z') {
+                score1 += 3;
+
+                score2 += 6;
+                score2 += 1;
+            }
+        }
+
+        print("{d}\n", .{score2});
+    }
+
+    print("Part 1 {d}\n", .{score1});
+    print("Part 2 {d}\n", .{score2});
 }
 
 // Useful stdlib functions
