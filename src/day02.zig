@@ -24,55 +24,53 @@ const a_shift2 = 4 + 8;
 const b_shift2 = 2 + 8;
 const c_shift2 = 0 + 8;
 
-const score1_table = [_]u8{
-    0b01_01_01, // Rock + Rock         = Tie
-    0b01_10_10, // Rock + Paper        = Win
-    0b01_11_00, // Rock + Scissors     = Lose
-    0b10_01_00, // Paper + Rock        = Lose
-    0b10_10_01, // Paper + Paper       = Tie
-    0b10_11_10, // Paper + Scissors    = Win
-    0b11_01_10, // Scissors + Rock     = Win
-    0b11_10_00, // Scissors + Paper    = Lose
-    0b11_11_01, // Scissors + Scissors = Tie
+const ScoreEntry = packed struct(u8) {
+    const Pick = enum(u2) {
+        rock,
+        paper,
+        scissors,
+    };
+
+    const Outcome = enum(u2) {
+        lose,
+        tie,
+        win,
+    };
+
+    a: Pick,
+    b: Pick,
+    c1: Outcome,
+    c2: Pick,
 };
 
-const score2_table = [_]u8{
-    0b01_01_11, // Rock + Lose     = Scissors
-    0b01_10_01, // Rock + Tie      = Rock
-    0b01_11_10, // Rock + Win      = Paper
-    0b10_01_01, // Paper + Lose    = Rock
-    0b10_10_10, // Paper + Tie     = Paper
-    0b10_11_11, // Paper + Win     = Scissors
-    0b11_01_10, // Scissors + Lose = Paper
-    0b11_10_11, // Scissors + Tie  = Scissors
-    0b11_11_01, // Scissors + Win  = Rock
+const score_table = [_]ScoreEntry{
+    .{ .a = .rock, .b = .rock, .c1 = .tie, .c2 = .scissors },
+    .{ .a = .rock, .b = .paper, .c1 = .win, .c2 = .rock },
+    .{ .a = .rock, .b = .scissors, .c1 = .lose, .c2 = .paper },
+    .{ .a = .paper, .b = .rock, .c1 = .lose, .c2 = .rock },
+    .{ .a = .paper, .b = .paper, .c1 = .tie, .c2 = .paper },
+    .{ .a = .paper, .b = .scissors, .c1 = .win, .c2 = .scissors },
+    .{ .a = .scissors, .b = .rock, .c1 = .win, .c2 = .paper },
+    .{ .a = .scissors, .b = .paper, .c1 = .lose, .c2 = .scissors },
+    .{ .a = .scissors, .b = .scissors, .c1 = .tie, .c2 = .rock },
 };
 
-const score_table = blk: {
-    var table = [_]u16{0} ** 9;
-
-    for (score1_table) |score1, i| {
-        table[i] |= score1;
-    }
-
-    for (score2_table) |score2, i| {
-        table[i] |= @as(u16, score2) << 8;
-    }
-
-    break :blk table;
+pub const Line = packed struct(u4) {
+    a: u2 = 0,
+    b: u2 = 0,
 };
 
 const lines_table = blk: {
     @setEvalBranchQuota(100000);
     const n = util.countOne(data, "\n") + 1;
 
-    var table = [_]u16{0} ** n;
+    var table = [_]Line{.{}} ** n;
 
     var i: usize = 0;
     var lines = split(u8, data, "\n");
     while (lines.next()) |line| : (i += 1) {
-        table[i] = line[0] - 'A' + 1;
-        table[i] |= @as(u16, line[2] - 'A' + 1) << 8;
+        table[i].a = @truncate(u2, line[0] - 'A');
+        table[i].b = @truncate(u2, line[2] - 'X');
     }
 
     break :blk table;
@@ -85,19 +83,13 @@ pub fn main() !void {
     var score2: i64 = 0;
 
     for (lines_table) |line| {
-        const a = @truncate(u8, line);
-        const b = @truncate(u8, line >> 8);
-
-        score1 += b;
-        score2 += (b - 1) * 3;
+        score1 += line.b + 1;
+        score2 += @as(u4, line.b) * 3;
 
         inline for (score_table) |bits| {
-            const is_a = (bits & a_mask1) >> a_shift1 == a;
-            const is_b = (bits & b_mask1) >> b_shift1 == b;
-
-            if (is_a and is_b) {
-                score1 += ((bits & c_mask1) >> c_shift1) * 3;
-                score2 += ((bits & c_mask2) >> c_shift2);
+            if (@enumToInt(bits.a) == line.a and @enumToInt(bits.b) == line.b) {
+                score1 += @as(u4, @enumToInt(bits.c1)) * 3;
+                score2 += @enumToInt(bits.c2) + 1;
             }
         }
     }
