@@ -130,7 +130,7 @@ pub fn countAny(data: []const u8, delims: []const u8) usize {
 
 pub fn splitOne(data: []const u8, delim: []const u8) ![][]const u8 {
     var ret = try gpa.alloc([]const u8, countOne(data, delim) + 1);
-    var it = std.mem.split(data, delim);
+    var it = std.mem.split(u8, data, delim);
 
     for (ret) |_, i| {
         ret[i] = it.next() orelse unreachable;
