@@ -141,7 +141,7 @@ pub fn splitOne(data: []const u8, delim: []const u8) ![][]const u8 {
 
 pub fn splitAny(data: []const u8, delims: []const u8) ![][]const u8 {
     var ret = try gpa.alloc([]const u8, countAny(data, delims) + 1);
-    var it = std.mem.tokenize(data, delims);
+    var it = std.mem.tokenize(u8, data, delims);
 
     // The countAny implementation doesn't ignore sequences of delimitors, while tokenize does, so this will fill as much as possible
     var i: usize = 0;
