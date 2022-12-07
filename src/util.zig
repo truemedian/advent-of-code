@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const List = std.ArrayList;
-const Map = std.AutoHashMap;
+const AutoMap = std.AutoHashMap;
 const StrMap = std.StringHashMap;
 const BitSet = std.DynamicBitSet;
 const Str = []const u8;
@@ -10,6 +10,65 @@ var gpa_impl = std.heap.GeneralPurposeAllocator(.{}){};
 pub const gpa = gpa_impl.allocator();
 
 // Add utility functions here
+
+pub fn Map(comptime K: type, comptime V: type) type {
+    if (K == []const u8) {
+        return StrMap(V);
+    } else {
+        return AutoMap(K, V);
+    }
+}
+
+pub fn Graph(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        pub const Edge = struct {
+            source: T,
+            destination: T,
+            weight: i32,
+        };
+
+        nodes: std.ArrayListUnmanaged(T) = .{},
+        edges: std.ArrayListUnmanaged(Edge) = .{},
+
+        pub fn addNode(self: *Self, value: T) !void {
+            try self.nodes.append(gpa, value);
+        }
+
+        pub fn addEdge(self: *Self, source: T, destination: T, weight: i32) !void {
+            try self.edges.append(gpa, Edge{
+                .source = source,
+                .destination = destination,
+                .weight = weight,
+            });
+        }
+
+        pub fn getChildren(self: *Self, value: T) ![]Edge {
+            var list = std.ArrayListUnmanaged(Edge){};
+
+            for (self.edges.items) |edge| {
+                if (edge.source == value) {
+                    try list.append(gpa, edge);
+                }
+            }
+
+            return try list.toOwnedSlice(gpa);
+        }
+
+        pub fn getParents(self: *Self, value: T) ![]Edge {
+            var list = std.ArrayListUnmanaged(Edge){};
+
+            for (self.edges.items) |edge| {
+                if (edge.destination == value) {
+                    try list.append(gpa, edge);
+                }
+            }
+
+            return try list.toOwnedSlice(gpa);
+        }
+    };
+}
 
 pub const GridArray = struct {
     width: u64,
@@ -152,7 +211,6 @@ pub fn splitAny(data: []const u8, delims: []const u8) ![][]const u8 {
 
     return ret;
 }
-
 
 pub fn countCombinations(comptime T: type, comptime range: usize, slice: []const T) usize {
     var n: usize = slice.len;
