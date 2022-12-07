@@ -44,28 +44,122 @@ pub fn Graph(comptime T: type) type {
             });
         }
 
-        pub fn getChildren(self: *Self, value: T) ![]Edge {
+        pub fn getChildren(self: Self, value: T) ![]Edge {
             var list = std.ArrayListUnmanaged(Edge){};
 
             for (self.edges.items) |edge| {
-                if (edge.source == value) {
-                    try list.append(gpa, edge);
+                if (T == []const u8) {
+                    if (std.mem.eql(u8, edge.source, value)) {
+                        try list.append(gpa, edge);
+                    }
+                } else {
+                    if (edge.source == value) {
+                        try list.append(gpa, edge);
+                    }
                 }
             }
 
             return try list.toOwnedSlice(gpa);
         }
 
-        pub fn getParents(self: *Self, value: T) ![]Edge {
+        pub fn getParents(self: Self, value: T) ![]Edge {
             var list = std.ArrayListUnmanaged(Edge){};
 
             for (self.edges.items) |edge| {
-                if (edge.destination == value) {
-                    try list.append(gpa, edge);
+                if (T == []const u8) {
+                    if (std.mem.eql(u8, edge.destination, value)) {
+                        try list.append(gpa, edge);
+                    }
+                } else {
+                    if (edge.destination == value) {
+                        try list.append(gpa, edge);
+                    }
                 }
             }
 
             return try list.toOwnedSlice(gpa);
+        }
+
+        fn distanceLessThan(_: void, a: NodeWeight, b: NodeWeight) std.math.Order {
+            return std.math.order(a.weight, b.weight);
+        }
+
+        const NodeWeight = struct {
+            node: T,
+            weight: i32,
+        };
+
+        pub fn distanceMap(self: Self, start: T) !Map(T, i32) {
+            var distance_map = Map(T, i32).init(gpa);
+            try distance_map.ensureTotalCapacity(@intCast(u32, self.nodes.items.len));
+
+            var visited = Map(T, void).init(gpa);
+            defer visited.deinit();
+
+            try visited.ensureTotalCapacity(@intCast(u32, self.nodes.items.len));
+
+            var queue = std.PriorityQueue(NodeWeight, void, distanceLessThan).init(gpa, {});
+            defer queue.deinit();
+
+            try queue.ensureTotalCapacity(self.nodes.items.len);
+
+            try queue.add(.{ .node = start, .weight = 0 });
+
+            while (queue.pop()) |blob| {
+                if (visited.contains(blob.node)) continue;
+                try distance_map.put(blob.node, blob.distance);
+                try visited.put(blob.node, {});
+
+                var children = try self.getChildren(blob.node);
+                for (children) |child| {
+                    if (visited.contains(child.destination)) continue;
+                    try queue.add(.{ .node = child.destination, .weight = blob.distance + child.weight });
+                }
+            }
+
+            return distance_map;
+        }
+
+        pub fn findRoot(self: Self) !T {
+            var parents = Map(T, void).init(gpa);
+            defer parents.deinit();
+
+            for (self.edges.items) |edge| {
+                try parents.put(edge.destination, {});
+            }
+
+            for (self.nodes.items) |node| {
+                if (!parents.contains(node)) {
+                    return node;
+                }
+            }
+
+            @panic("graph has no root");
+        }
+
+        fn printNode(self: Self, writer: anytype, node: T, indent: usize) !void {
+            const children = self.getChildren(node) catch return error.SystemResources; // cool
+
+            try writer.print(if (T == []const u8) "{s}" else "{any}", .{node});
+            for (children) |child| {
+                try writer.writeAll("\n");
+
+                var i: usize = 0;
+                while (i < indent) {
+                    try writer.writeAll("|  ");
+                    i += 1;
+                }
+
+                try writer.writeAll("|- ");
+                try self.printNode(writer, child.destination, indent + 1);
+            }
+        }
+
+        pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = fmt;
+            _ = options;
+            const root = self.findRoot() catch return error.SystemResources; // cool
+            try self.printNode(writer, root, 0);
         }
     };
 }

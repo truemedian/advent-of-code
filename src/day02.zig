@@ -1,14 +1,9 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
-const List = std.ArrayList;
-const Map = std.AutoHashMap;
-const StrMap = std.StringHashMap;
-const BitSet = std.DynamicBitSet;
 
 const util = @import("util.zig");
 const gpa = util.gpa;
 
-const data = trim(u8, @embedFile("data/day02.txt"), "\n");
+const data = @embedFile("data/day02.txt");
 
 const a_mask1 = 0b11_00_00;
 const b_mask1 = 0b00_11_00;
@@ -67,7 +62,7 @@ const lines_table = blk: {
     var table = [_]Line{.{}} ** n;
 
     var i: usize = 0;
-    var lines = split(u8, data, "\n");
+    var lines = tokenize(u8, data, "\n");
     while (lines.next()) |line| : (i += 1) {
         table[i].a = @truncate(u2, line[0] - 'A');
         table[i].b = @truncate(u2, line[2] - 'X');
@@ -103,32 +98,4 @@ pub fn main() !void {
 
 // Useful stdlib functions
 const tokenize = std.mem.tokenize;
-const split = std.mem.split;
-const indexOf = std.mem.indexOfScalar;
-const indexOfAny = std.mem.indexOfAny;
-const indexOfPosLinear = std.mem.indexOfPosLinear;
-const lastIndexOf = std.mem.lastIndexOfScalar;
-const lastIndexOfAny = std.mem.lastIndexOfAny;
-const lastIndexOfLinear = std.mem.lastIndexOfLinear;
-const trim = std.mem.trim;
-const sliceMin = std.mem.min;
-const sliceMax = std.mem.max;
-
-const parseInt = std.fmt.parseInt;
-const parseFloat = std.fmt.parseFloat;
-
-const min = std.math.min;
-const min3 = std.math.min3;
-const max = std.math.max;
-const max3 = std.math.max3;
-
 const print = std.debug.print;
-const assert = std.debug.assert;
-
-const sort = std.sort.sort;
-const asc = std.sort.asc;
-const desc = std.sort.desc;
-
-// Generated from template/template.zig.
-// Run `zig build generate` to update.
-// Only unmodified days will be updated.
