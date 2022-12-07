@@ -14,7 +14,11 @@ pub fn main() !void {
     var part2: i64 = 0;
 
     var dir: []const u8 = "/";
-    var files = StrMap(i64).init(gpa);
+
+    var dirs = StrMap(i64).init(gpa);
+    try dirs.ensureTotalCapacity(1024);
+
+    var used: i64 = 0;
 
     var lines = tokenize(u8, data, "\n");
     while (lines.next()) |line| {
@@ -27,34 +31,24 @@ pub fn main() !void {
 
             if (std.mem.eql(u8, parts[0], "dir")) continue;
 
-            const file = try std.fs.path.join(gpa, &.{ dir, parts[1] });
-            try files.put(file, try parseInt(i64, parts[0], 10));
-        }
-    }
+            const size = try parseInt(i64, parts[0], 10);
 
-    var dirs = StrMap(i64).init(gpa);
+            used += size;
 
-    var used: i64 = 0;
-
-    var it = files.iterator();
-    while (it.next()) |entry| {
-        used += entry.value_ptr.*;
-
-        var parts = try util.splitOne(entry.key_ptr.*[1..], "/");
-
-        for (parts[0 .. parts.len - 1]) |_, i| {
-            const dirname = try std.fs.path.join(gpa, parts[0 .. i + 1]);
-
-            const gop = try dirs.getOrPut(dirname);
-            if (gop.found_existing) {
-                gop.value_ptr.* += entry.value_ptr.*;
-            } else {
-                gop.value_ptr.* = entry.value_ptr.*;
+            var cur_dir: ?[]const u8 = dir;
+            while (cur_dir) |dirname| : (cur_dir = std.fs.path.dirname(dirname)) {
+                const gop = try dirs.getOrPut(dirname);
+                if (gop.found_existing) {
+                    gop.value_ptr.* += size;
+                } else {
+                    gop.value_ptr.* = size;
+                }
             }
         }
     }
 
     var list = List(i64).init(gpa);
+    try list.ensureTotalCapacity(1024);
 
     var it2 = dirs.iterator();
     while (it2.next()) |entry| {
