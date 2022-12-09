@@ -200,9 +200,10 @@ pub const GridArray = struct {
 
     pub fn print(self: *GridArray) void {
         for (self.data) |value| {
-            std.debug.print("{c}", .{if (value == 0) ' ' else '#'});
+            const c: u8 = if (value == 0) ' ' else '#';
+            std.debug.print("{c}", .{c});
         }
-        std.debug.print("", .{});
+        std.debug.print("\n", .{});
     }
 };
 
