@@ -199,9 +199,13 @@ pub const GridArray = struct {
     }
 
     pub fn print(self: *GridArray) void {
-        for (self.data) |value| {
-            const c: u8 = if (value == 0) ' ' else '#';
-            std.debug.print("{c}", .{c});
+        var y: u64 = 0;
+        while (y < self.height) : (y += 1) {
+            var x: u64 = 0;
+            while (x < self.width) : (x += 1) {
+                std.debug.print("{c}", .{self.get(x, y).*});
+            }
+            std.debug.print("\n", .{});
         }
         std.debug.print("\n", .{});
     }
